@@ -1,6 +1,9 @@
 package org.example.demo.controller;
 
 import org.example.demo.repository.BookRepository;
+import org.example.demo.security.CustomUserDetailsService;
+import org.example.demo.security.JwtAuthFilter;
+import org.example.demo.security.JwtUtil;
 import org.example.demo.service.BookService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +35,15 @@ class BookControllerTest {
 
     @MockBean
     private BookService bookService;
+
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
+
+    @MockBean
+    private JwtUtil jwtUtil;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
 
 
     @Test
