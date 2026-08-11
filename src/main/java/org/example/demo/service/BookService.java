@@ -8,4 +8,6 @@ import java.util.List;
 public interface BookService {
     BookResponse createBook(CreateBookRequest request);
     List<BookResponse> getAllBooks();
+
+    void deleteBook(Long id);
 }

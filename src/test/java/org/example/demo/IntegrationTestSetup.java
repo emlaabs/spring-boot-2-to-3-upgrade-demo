@@ -16,23 +16,34 @@ import java.util.Set;
 @TestConfiguration
 public class IntegrationTestSetup {
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     @Bean
-    public CommandLineRunner testDataLoader(UserRepository userRepo, RoleRepository roleRepo) {
+    public CommandLineRunner testDataLoader(
+            UserRepository userRepo,
+            RoleRepository roleRepo,
+            PasswordEncoder encoder) {
+
         return args -> {
-            Role role = new Role();
-            role.setName("ROLE_USER");
-            roleRepo.save(role);
+            Role adminRole = new Role();
+            adminRole.setName("ROLE_ADMIN");
+            roleRepo.save(adminRole);
+
+            Role userRole = new Role();
+            userRole.setName("ROLE_USER");
+            roleRepo.save(userRole);
+
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setPassword(encoder.encode("password123"));
+            admin.setRoles(Set.of(adminRole));
+            userRepo.save(admin);
 
             User user = new User();
             user.setUsername("eric");
-            user.setPassword(passwordEncoder.encode("password123"));
-            user.setRoles(Set.of(role));
-
+            user.setPassword(encoder.encode("password123"));
+            user.setRoles(Set.of(userRole));
             userRepo.save(user);
         };
     }
 }
+
 
