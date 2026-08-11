@@ -2,9 +2,12 @@ package org.example.demo.controller;
 
 import org.example.demo.security.JwtUtil;
 import org.example.demo.security.CustomUserDetailsService;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 record LoginRequest(String username, String password) {}
 record LoginResponse(String token) {}
@@ -41,4 +44,14 @@ public class AuthController {
 
         return new LoginResponse(token);
     }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, String> handleBadCredentials(BadCredentialsException ex) {
+        return Map.of(
+                "error", "UNAUTHORIZED",
+                "message", "Invalid username or password"
+        );
+    }
+
 }
