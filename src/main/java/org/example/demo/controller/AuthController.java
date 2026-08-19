@@ -6,16 +6,20 @@ import org.example.demo.dto.RefreshRequest;
 import org.example.demo.dto.RegistrationRequest;
 import org.example.demo.dto.ResetPasswordRequest;
 import org.example.demo.model.User;
+import org.example.demo.repository.UserRepository;
 import org.example.demo.security.JwtUtil;
 import org.example.demo.security.CustomUserDetailsService;
 import org.example.demo.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.Map;
 
 record LoginRequest(String username, String password) {}
@@ -33,46 +37,69 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
 
+    private final UserRepository userRepository;
+
     public AuthController(
             AuthenticationManager authManager,
             CustomUserDetailsService userDetailsService,
             JwtUtil jwtUtil,
-            UserService userService
+            UserService userService,
+            UserRepository userRepository
     ) {
         this.authManager = authManager;
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
-        Authentication authentication = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.username(),
-                        request.password()
-                )
-        );
 
-        User user = userService.findByUsername(request.username());
+        User user = userRepository.findByUsername(request.username()).orElse(null);
 
-        if (!user.isVerified()) {
-            throw new AuthenticationException("Email not verified") {};
+        // Phase 12 rule: unverified users cannot log in
+        if (user != null && !user.isVerified()) {
+            throw new BadCredentialsException("User is not verified");
         }
 
-        String token = jwtUtil.generateToken(request.username());
-        String refreshToken = jwtUtil.generateRefreshToken(request.username());
+        try {
+            Authentication auth = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.username(), request.password()
+                    )
+            );
 
-        return new LoginResponse(token, refreshToken);
-    }
+            // SUCCESS → reset attempts
+            if (user != null) {
+                user.resetFailedAttempts();
+                userRepository.save(user);
+            }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public Map<String, String> handleBadCredentials(BadCredentialsException ex) {
-        return Map.of(
-                "error", "UNAUTHORIZED",
-                "message", "Invalid username or password"
-        );
+            return new LoginResponse(
+                    jwtUtil.generateToken(request.username()),
+                    jwtUtil.generateRefreshToken(request.username())
+            );
+
+        } catch (LockedException ex) {
+            if (user != null) {
+                throw new LockedException("Account locked until " + user.getLockoutUntil());
+            }
+            throw new LockedException("Account is locked");
+        } catch (BadCredentialsException ex) {
+
+            if (user != null) {
+                user.incrementFailedAttempts();
+
+                if (user.getFailedLoginAttempts() >= 5) {
+                    user.lockFor(Duration.ofMinutes(15));
+                }
+
+                userRepository.save(user);
+            }
+
+            throw ex; // important: do NOT wrap again
+        }
     }
 
     @PostMapping("/refresh")

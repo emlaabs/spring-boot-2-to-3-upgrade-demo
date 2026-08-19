@@ -1,6 +1,7 @@
 package org.example.demo.controller;
 
 import org.example.demo.model.User;
+import org.example.demo.repository.UserRepository;
 import org.example.demo.security.CustomUserDetailsService;
 import org.example.demo.security.JwtAuthFilter;
 import org.example.demo.security.JwtUtil;
@@ -41,6 +42,9 @@ class AuthControllerTest {
 
     @MockBean
     private JwtAuthFilter jwtAuthFilter;
+
+    @MockBean
+    private UserRepository userRepository;
 
     @Test
     void loginShouldReturnToken() throws Exception {

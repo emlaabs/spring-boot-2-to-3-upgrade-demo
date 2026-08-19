@@ -22,9 +22,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -235,6 +237,61 @@ class AuthControllerIntegrationTest {
                     """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Reset token expired"));
+    }
+
+    @Test
+    void accountLocksAfterFiveFailedAttempts() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/auth/login")
+                            .contentType("application/json")
+                            .content("""
+                    {"username":"eric","password":"wrong"}
+                """))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                {"username":"eric","password":"password"}
+            """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("ACCOUNT_LOCKED"));
+    }
+
+    @Test
+    void accountUnlocksAfterCooldown() throws Exception {
+        User eric = userRepository.findByUsername("eric").get();
+        eric.lockFor(Duration.ofSeconds(1));
+        userRepository.save(eric);
+
+        Thread.sleep(1500);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                {"username":"eric","password":"password"}
+            """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void successfulLoginResetsFailedAttempts() throws Exception {
+        User eric = userRepository.findByUsername("eric").get();
+        eric.incrementFailedAttempts();
+        eric.incrementFailedAttempts();
+        userRepository.save(eric);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                {"username":"eric","password":"password"}
+            """))
+                .andExpect(status().isOk());
+
+        User updated = userRepository.findByUsername("eric").get();
+        assertEquals(0, updated.getFailedLoginAttempts());
+
     }
 
 }
