@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="hero">
+      <p class="eyebrow">Personal library</p>
+      <h1>Keep track of the books you love.</h1>
+      <p class="hero-copy">A small front end for your Spring Boot book API.</p>
+    </header>
+
+    <p id="message" class="message" role="status" hidden></p>
+
+    <section id="auth-view" class="auth-grid" aria-label="Authentication">
+      <form id="login-form" class="panel">
+        <p class="eyebrow">Welcome back</p>
+        <h2>Sign in</h2>
+        <label>Username<input name="username" autocomplete="username" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Sign in</button>
+      </form>
+
+      <form id="register-form" class="panel subtle-panel">
+        <p class="eyebrow">New here?</p>
+        <h2>Create an account</h2>
+        <label>Username<input name="username" minlength="3" maxlength="50" required></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required></label>
+        <label>Password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label>
+        <button type="submit" class="secondary">Create account</button>
+        <p class="help-text">For this demo, the app verifies the account immediately after registration.</p>
+      </form>
+    </section>
+
+    <section id="library-view" hidden>
+      <div class="library-header">
+        <div>
+          <p class="eyebrow">Your collection</p>
+          <h2>Books</h2>
+        </div>
+        <div class="header-actions">
+          <span id="signed-in-as"></span>
+          <button id="logout-button" class="secondary" type="button">Sign out</button>
+        </div>
+      </div>
+
+      <div class="library-grid">
+        <form id="book-form" class="panel add-book-form">
+          <h3>Add a book</h3>
+          <label>Title<input name="title" required></label>
+          <label>Author ID<input name="authorId" type="number" min="1" step="1" required></label>
+          <button type="submit">Add book</button>
+          <p class="help-text">The current API expects an existing author ID. Add author-management endpoints next to remove this temporary field.</p>
+        </form>
+
+        <section class="panel books-panel" aria-live="polite">
+          <div class="books-heading">
+            <h3>All books</h3>
+            <button id="refresh-button" class="text-button" type="button">Refresh</button>
+          </div>
+          <div id="book-list" class="book-list"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

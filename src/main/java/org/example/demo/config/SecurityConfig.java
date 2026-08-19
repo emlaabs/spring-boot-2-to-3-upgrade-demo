@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/index.html", "/styles.css", "/app.js").permitAll()
                         .requestMatchers("/auth/login", "/auth/refresh", "/auth/register",
                                 "/auth/verify", "/auth/forgot-password", "/auth/reset-password").permitAll()
                         .anyRequest().authenticated()
